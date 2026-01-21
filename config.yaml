@@ -1,0 +1,4 @@
+api_football_key: "SEU_TOKEN_AQUI"  # gratis: api-football.com
+odds_api_key: "SEU_TOKEN_AQUI"      # gratis: odds-api.com
+leagues: [39,40,41,71,94,135,140]   # Premier,LaLiga,SerieA,Brasileirao...
+min_prob: 0.70                      # só mostra ≥ 70 %
