@@ -1,0 +1,30 @@
+import joblib, pandas as pd, requests, yaml, datetime as dt
+CFG = yaml.safe_load(open("config.yaml"))
+HEAD = {"x-apisports-key": CFG["api_football_key"]}
+
+def today_fixtures():
+    today = dt.date.today().isoformat()
+    url  = f"https://v3.football.api-sports.io/fixtures?date={today}"
+    resp = requests.get(url, headers=HEAD).json()
+    return pd.json_normalize(resp["response"])
+
+def inference():
+    models = {t: joblib.load(f"{t}.pkl") for t in
+              ["target_over15","target_btts","target_corners_over95","target_cards_over25"]}
+    feats  = ["hLastGoals","aLastGoals","hLastCorners","aLastCorners","hLastCards","aLastCards"]
+    df     = today_fixtures()
+    if df.empty: return pd.DataFrame()
+    for f in feats: df[f] = df[f].fillna(0)
+    res = []
+    for _,row in df.iterrows():
+        x = row[feats].values.reshape(1,-1)
+        for m in models:
+            prob = models[m].predict_proba(x)[0,1]
+            if prob >= CFG["min_prob"]:
+                res.append({"date":row["fixture.date"][:10],
+                            "league":row["league.name"],
+                            "home":row["teams.home.name"],
+                            "away":row["teams.away.name"],
+                            "market":m.replace("target_","").replace("_"," "),
+                            "prob":round(prob,2),
+                            "odd":
